@@ -35,11 +35,12 @@ import NotificationsScreen from "@/pages/NotificationsScreen";
 import SettingsScreen from "@/pages/SettingsScreen";
 import NotFound from "@/pages/NotFound";
 import PrescriptionScreen from "@/pages/PrescriptionScreen";
+import FamilyCenterScreen from "@/pages/FamilyCenterScreen";
 
 const queryClient = new QueryClient();
 
 /** Routes that show the bottom navigation + FAB */
-const APP_ROUTES = ["/home", "/medicines", "/calendar", "/analytics", "/profile", "/today"];
+const APP_ROUTES = ["/home", "/medicines", "/calendar", "/analytics", "/profile", "/today", "/prescriptions", "/family"];
 /** Routes that show the FAB */
 const FAB_ROUTES = ["/home", "/medicines", "/today"];
 
@@ -50,7 +51,6 @@ function AppRoutes() {
   const showNav = APP_ROUTES.some((r) => location.pathname.startsWith(r));
   const showFAB = FAB_ROUTES.some((r) => location.pathname.startsWith(r)) && !location.pathname.includes("add") && !location.pathname.includes("detail");
 
-  // Auth gate — if not logged in, only allow auth/onboarding routes
   const isAuthRoute = ["/", "/onboarding", "/login", "/register", "/forgot"].some((r) => location.pathname === r);
 
   if (!hasOnboarded && location.pathname === "/") {
@@ -72,7 +72,7 @@ function AppRoutes() {
           <Route path="/register" element={<RegisterScreen />} />
           <Route path="/forgot" element={<ForgotPasswordScreen />} />
 
-          {/* App routes — with nav + optional FAB */}
+          {/* App routes */}
           <Route path="/home" element={<AppPage pageKey="home"><HomeScreen /></AppPage>} />
           <Route path="/medicines" element={<AppPage pageKey="medicines" showFAB={showFAB}><MedicinesScreen /></AppPage>} />
           <Route path="/medicines/add" element={<AppPage pageKey="add-medicine"><AddMedicineScreen /></AppPage>} />
@@ -87,6 +87,7 @@ function AppRoutes() {
           <Route path="/notifications" element={<AppPage pageKey="notifications"><NotificationsScreen /></AppPage>} />
           <Route path="/settings" element={<AppPage pageKey="settings"><SettingsScreen /></AppPage>} />
           <Route path="/prescriptions" element={<AppPage pageKey="prescriptions"><PrescriptionScreen /></AppPage>} />
+          <Route path="/family" element={<AppPage pageKey="family"><FamilyCenterScreen /></AppPage>} />
 
           {/* Default redirects */}
           <Route path="/" element={<Navigate to={auth ? "/home" : "/login"} replace />} />
@@ -100,7 +101,6 @@ function AppRoutes() {
   );
 }
 
-/** Wrapper for app pages — adds scroll area + page transition */
 function AppPage({ children, pageKey, showFAB = false }: { children: ReactNode; pageKey: string; showFAB?: boolean }) {
   return (
     <ScrollArea>

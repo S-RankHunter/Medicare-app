@@ -1,13 +1,12 @@
 /**
  * MediCare AI — Central Application Store
  * Context provider with localStorage persistence.
- * Manages auth, medicines, logs, notifications, profile, settings and prescriptions.
  */
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from "react";
-import type { Medicine, MedicationLog, NotificationItem, Profile, AppSettings, AuthUser, LogStatus, Prescription } from "./types";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from "react";
+import type { Medicine, MedicationLog, NotificationItem, Profile, AppSettings, AuthUser, LogStatus, Prescription, FamilyMember, FamilyAlert } from "./types";
 import { SEED_MEDICINES, generateSeedLogs, SEED_NOTIFICATIONS, SEED_PROFILE } from "./seed-data";
-import { uid, todayISO, calculateAdherence, calculateStreak, getInventoryPercentage, isLowStock } from "./helpers";
+import { uid, todayISO, calculateAdherence, calculateStreak, isLowStock } from "./helpers";
 
 const STORAGE_KEY = "medicare-ai-state-v1";
 
@@ -20,6 +19,8 @@ interface PersistedState {
   profile: Profile;
   settings: AppSettings;
   prescriptions: Prescription[];
+  familyMembers: FamilyMember[];
+  familyAlerts: FamilyAlert[];
 }
 
 const DEFAULT_STATE: PersistedState = {
@@ -36,6 +37,8 @@ const DEFAULT_STATE: PersistedState = {
     notificationsEnabled: true,
   },
   prescriptions: [],
+  familyMembers: [],
+  familyAlerts: [],
 };
 
 function loadState(): PersistedState {
@@ -49,6 +52,8 @@ function loadState(): PersistedState {
       settings: { ...DEFAULT_STATE.settings, ...parsed.settings },
       profile: { ...DEFAULT_STATE.profile, ...parsed.profile },
       prescriptions: parsed.prescriptions ?? [],
+      familyMembers: parsed.familyMembers ?? [],
+      familyAlerts: parsed.familyAlerts ?? [],
     };
   } catch {
     return DEFAULT_STATE;
@@ -58,9 +63,7 @@ function loadState(): PersistedState {
 function saveState(state: PersistedState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // storage may be full or unavailable — silently ignore
-  }
+  } catch {}
 }
 
 interface StoreValue extends PersistedState {
@@ -97,11 +100,19 @@ interface StoreValue extends PersistedState {
   deletePrescription: (id: string) => void;
   updatePrescription: (id: string, updates: Partial<Prescription>) => void;
 
+  /* Family Center */
+  addFamilyMember: (member: Omit<FamilyMember, "id" | "createdAt" | "avatarInitial">) => void;
+  updateFamilyMember: (id: string, updates: Partial<FamilyMember>) => void;
+  deleteFamilyMember: (id: string) => void;
+  markFamilyAlertRead: (id: string) => void;
+  markAllFamilyAlertsRead: () => void;
+
   /* Derived data */
   todaySchedule: ReturnType<typeof getTodayScheduleProxy>;
   adherence: ReturnType<typeof calculateAdherence>;
   streak: number;
   lowStockMeds: Medicine[];
+  unreadFamilyAlerts: number;
 }
 
 function getTodayScheduleProxy() { return []; }
@@ -114,6 +125,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return loadState();
   });
 
+  // Track which medicine+time combos have already triggered a family alert today
+  const alertedRef = useRef<Set<string>>(new Set());
+
   useEffect(() => { saveState(state); }, [state]);
 
   useEffect(() => {
@@ -121,6 +135,77 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (state.settings.darkMode) root.classList.add("dark");
     else root.classList.remove("dark");
   }, [state.settings.darkMode]);
+
+  /* ── Family alert checker — runs every 60 seconds ── */
+  useEffect(() => {
+    const checkFamilyAlerts = () => {
+      const now = new Date();
+      const today = todayISO();
+      const activeMeds = state.medicines.filter((m) => m.isActive);
+      const enabledMembers = state.familyMembers.filter((fm) => fm.notificationsEnabled);
+
+      if (enabledMembers.length === 0) return;
+
+      activeMeds.forEach((med) => {
+        med.reminderTimes.forEach((time) => {
+          const [hours, minutes] = time.split(":").map(Number);
+          const medTime = new Date();
+          medTime.setHours(hours, minutes, 0, 0);
+
+          const diffMs = now.getTime() - medTime.getTime();
+          const diffMinutes = diffMs / 1000 / 60;
+
+          // 30 minutes after medicine time
+          if (diffMinutes < 30 || diffMinutes > 60) return;
+
+          const alertKey = `${med.id}-${time}-${today}`;
+          if (alertedRef.current.has(alertKey)) return;
+
+          // Check if medicine was taken
+          const log = state.logs.find(
+            (l) => l.medicineId === med.id && l.time === time && l.date === today
+          );
+          if (log && log.status === "taken") return;
+
+          // Medicine not taken — create family alerts
+          alertedRef.current.add(alertKey);
+
+          const newAlerts: FamilyAlert[] = enabledMembers.map((member) => ({
+            id: uid("alert"),
+            familyMemberId: member.id,
+            familyMemberName: member.name,
+            patientName: state.profile.name,
+            medicineName: med.name,
+            scheduledTime: time,
+            alertTime: new Date().toISOString(),
+            isRead: false,
+            createdAt: new Date().toISOString(),
+          }));
+
+          // Also add to in-app notifications
+          const familyNotifs: NotificationItem[] = enabledMembers.map((member) => ({
+            id: uid("notif"),
+            type: "family-alert" as const,
+            title: `Family Alert — ${member.name}`,
+            body: `${state.profile.name} hasn't taken ${med.name} (${med.dosage}) scheduled at ${time}. ${member.name} has been notified.`,
+            medicineName: med.name,
+            time: new Date().toISOString(),
+            isRead: false,
+          }));
+
+          setState((s) => ({
+            ...s,
+            familyAlerts: [...newAlerts, ...s.familyAlerts],
+            notifications: [...familyNotifs, ...s.notifications],
+          }));
+        });
+      });
+    };
+
+    const interval = setInterval(checkFamilyAlerts, 60000);
+    checkFamilyAlerts(); // run once immediately
+    return () => clearInterval(interval);
+  }, [state.medicines, state.logs, state.familyMembers, state.profile.name]);
 
   /* ── Auth actions ── */
   const login = useCallback((email: string, name?: string) => {
@@ -226,7 +311,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             ? { ...m, remainingQuantity: Math.max(0, m.remainingQuantity - 1) }
             : m
         );
-
         const updatedMed = medicines.find((m) => m.id === medicineId);
         const wasLow = isLowStock(med);
         const isLowNow = updatedMed ? isLowStock(updatedMed) : false;
@@ -359,13 +443,54 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  /* ── Family Center ── */
+  const addFamilyMember = useCallback((member: Omit<FamilyMember, "id" | "createdAt" | "avatarInitial">) => {
+    const newMember: FamilyMember = {
+      ...member,
+      id: uid("fam"),
+      avatarInitial: member.name.charAt(0).toUpperCase(),
+      createdAt: new Date().toISOString(),
+    };
+    setState((s) => ({ ...s, familyMembers: [...s.familyMembers, newMember] }));
+  }, []);
+
+  const updateFamilyMember = useCallback((id: string, updates: Partial<FamilyMember>) => {
+    setState((s) => ({
+      ...s,
+      familyMembers: s.familyMembers.map((m) => (m.id === id ? { ...m, ...updates } : m)),
+    }));
+  }, []);
+
+  const deleteFamilyMember = useCallback((id: string) => {
+    setState((s) => ({
+      ...s,
+      familyMembers: s.familyMembers.filter((m) => m.id !== id),
+      familyAlerts: s.familyAlerts.filter((a) => a.familyMemberId !== id),
+    }));
+  }, []);
+
+  const markFamilyAlertRead = useCallback((id: string) => {
+    setState((s) => ({
+      ...s,
+      familyAlerts: s.familyAlerts.map((a) => (a.id === id ? { ...a, isRead: true } : a)),
+    }));
+  }, []);
+
+  const markAllFamilyAlertsRead = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      familyAlerts: s.familyAlerts.map((a) => ({ ...a, isRead: true })),
+    }));
+  }, []);
+
   /* ── Derived data ── */
   const todaySchedule = useMemo(() => {
     const activeMeds = state.medicines.filter((m) => m.isActive);
     const today = todayISO();
     const todayLogs = state.logs.filter((l) => l.date === today);
-    const logMap = new Map<string, typeof todayLogs[number]>(todayLogs.map((l) => [`${l.medicineId}-${l.time}`, l] as const));
-
+    const logMap = new Map<string, typeof todayLogs[number]>(
+      todayLogs.map((l) => [`${l.medicineId}-${l.time}`, l] as const)
+    );
     const items = activeMeds.flatMap((med) =>
       med.reminderTimes.map((time) => ({
         medicine: med,
@@ -380,6 +505,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const adherence = useMemo(() => calculateAdherence(state.logs), [state.logs]);
   const streak = useMemo(() => calculateStreak(state.logs), [state.logs]);
   const lowStockMeds = useMemo(() => state.medicines.filter((m) => isLowStock(m)), [state.medicines]);
+  const unreadFamilyAlerts = useMemo(() => state.familyAlerts.filter((a) => !a.isRead).length, [state.familyAlerts]);
 
   const value: StoreValue = {
     ...state,
@@ -389,7 +515,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     markNotificationRead, markAllNotificationsRead, addNotification,
     updateProfile, updateSettings, toggleDarkMode,
     addPrescription, deletePrescription, updatePrescription,
-    todaySchedule, adherence, streak, lowStockMeds,
+    addFamilyMember, updateFamilyMember, deleteFamilyMember,
+    markFamilyAlertRead, markAllFamilyAlertsRead,
+    todaySchedule, adherence, streak, lowStockMeds, unreadFamilyAlerts,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -20,7 +20,7 @@ export type Frequency = "once-daily" | "twice-daily" | "three-times-daily" | "fo
 
 export type LogStatus = "taken" | "missed" | "skipped" | "pending" | "snoozed";
 
-export type NotificationType = "reminder" | "low-stock" | "missed" | "info";
+export type NotificationType = "reminder" | "low-stock" | "missed" | "info" | "family-alert";
 
 export type PrescriptionType = "image" | "pdf";
 
@@ -29,13 +29,36 @@ export interface Prescription {
   title: string;
   doctorName: string;
   hospitalName: string;
-  date: string;           // ISO date
+  date: string;
   expiryDate: string | null;
-  fileUrl: string;        // base64 data URL
+  fileUrl: string;
   fileType: PrescriptionType;
   fileName: string;
   notes: string;
   medicineName: string;
+  createdAt: string;
+}
+
+export interface FamilyMember {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  email: string;
+  avatarInitial: string;
+  notificationsEnabled: boolean;
+  createdAt: string;
+}
+
+export interface FamilyAlert {
+  id: string;
+  familyMemberId: string;
+  familyMemberName: string;
+  patientName: string;
+  medicineName: string;
+  scheduledTime: string;
+  alertTime: string;
+  isRead: boolean;
   createdAt: string;
 }
 
