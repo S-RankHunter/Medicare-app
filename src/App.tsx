@@ -34,6 +34,7 @@ import InsightsScreen from "@/pages/InsightsScreen";
 import NotificationsScreen from "@/pages/NotificationsScreen";
 import SettingsScreen from "@/pages/SettingsScreen";
 import NotFound from "@/pages/NotFound";
+import PrescriptionScreen from "@/pages/PrescriptionScreen";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ function AppRoutes() {
           <Route path="/insights" element={<AppPage pageKey="insights"><InsightsScreen /></AppPage>} />
           <Route path="/notifications" element={<AppPage pageKey="notifications"><NotificationsScreen /></AppPage>} />
           <Route path="/settings" element={<AppPage pageKey="settings"><SettingsScreen /></AppPage>} />
+          <Route path="/prescriptions" element={<AppPage pageKey="prescriptions"><PrescriptionScreen /></AppPage>} />
 
           {/* Default redirects */}
           <Route path="/" element={<Navigate to={auth ? "/home" : "/login"} replace />} />

@@ -2,8 +2,7 @@
  * ForgotPasswordScreen — Password reset request.
  */
 
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, ChevronLeft, CheckCircle2 } from "lucide-react";
 
@@ -13,7 +12,7 @@ export default function ForgotPasswordScreen() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
@@ -33,33 +32,18 @@ export default function ForgotPasswordScreen() {
           </Link>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col items-center pt-4"
-        >
+        <div className="flex flex-col items-center pt-4">
           <h1 className="text-2xl font-bold text-white">Reset Password</h1>
           <p className="mt-1 text-sm text-white/80 px-8 text-center">
             Enter your email and we'll send you a reset link
           </p>
-        </motion.div>
+        </div>
 
         {sent ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="mt-auto mb-auto mx-5 glass-strong rounded-3xl p-8 text-center"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.2 }}
-              className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent/10"
-            >
+          <div className="mt-auto mb-auto mx-5 glass-strong rounded-3xl p-8 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
               <CheckCircle2 className="h-8 w-8 text-accent" />
-            </motion.div>
+            </div>
             <h2 className="mt-4 text-lg font-bold text-foreground">Check Your Email</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               We've sent a password reset link to <span className="font-semibold text-foreground">{email}</span>
@@ -70,14 +54,9 @@ export default function ForgotPasswordScreen() {
             >
               Back to Login
             </button>
-          </motion.div>
+          </div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="mt-auto glass-strong rounded-3xl p-6 mx-5 mb-8"
-          >
+          <div className="mt-auto glass-strong rounded-3xl p-6 mx-5 mb-8">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Email</label>
@@ -94,24 +73,21 @@ export default function ForgotPasswordScreen() {
                 </div>
               </div>
 
-              <motion.button
+              <button
                 type="submit"
                 disabled={loading}
-                whileTap={{ scale: 0.97 }}
                 className="flex w-full items-center justify-center rounded-xl bg-warning py-3.5 text-base font-semibold text-white shadow-lg shadow-warning/25 disabled:opacity-60"
               >
                 {loading ? (
-                  <motion.div
+                  <div
                     className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                   />
                 ) : (
                   "Send Reset Link"
                 )}
-              </motion.button>
+              </button>
             </form>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

@@ -22,6 +22,23 @@ export type LogStatus = "taken" | "missed" | "skipped" | "pending" | "snoozed";
 
 export type NotificationType = "reminder" | "low-stock" | "missed" | "info";
 
+export type PrescriptionType = "image" | "pdf";
+
+export interface Prescription {
+  id: string;
+  title: string;
+  doctorName: string;
+  hospitalName: string;
+  date: string;           // ISO date
+  expiryDate: string | null;
+  fileUrl: string;        // base64 data URL
+  fileType: PrescriptionType;
+  fileName: string;
+  notes: string;
+  medicineName: string;
+  createdAt: string;
+}
+
 export interface Medicine {
   id: string;
   name: string;
@@ -29,10 +46,10 @@ export interface Medicine {
   category: MedicineCategory;
   dosage: string;
   foodTiming: FoodTiming;
-  startDate: string;       // ISO date
-  endDate: string | null;  // ISO date or null for ongoing
+  startDate: string;
+  endDate: string | null;
   frequency: Frequency;
-  reminderTimes: string[]; // ["07:00", "13:00", "20:00"]
+  reminderTimes: string[];
   remainingQuantity: number;
   initialQuantity: number;
   notes: string;
@@ -45,10 +62,10 @@ export interface MedicationLog {
   id: string;
   medicineId: string;
   medicineName: string;
-  date: string;    // ISO date YYYY-MM-DD
-  time: string;    // "07:00"
+  date: string;
+  time: string;
   status: LogStatus;
-  takenAt: string | null; // ISO timestamp when action performed
+  takenAt: string | null;
   snoozedCount: number;
 }
 
@@ -58,7 +75,7 @@ export interface NotificationItem {
   title: string;
   body: string;
   medicineName: string;
-  time: string;       // ISO timestamp
+  time: string;
   isRead: boolean;
 }
 
@@ -74,7 +91,7 @@ export interface Profile {
   email: string;
   avatarUrl: string | null;
   age: number;
-  weight: number;       // kg
+  weight: number;
   bloodGroup: string;
   doctor: string;
   hospital: string;

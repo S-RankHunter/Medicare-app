@@ -1,11 +1,11 @@
 /**
  * MediCare AI — Central Application Store
  * Context provider with localStorage persistence.
- * Manages auth, medicines, logs, notifications, profile, and settings.
+ * Manages auth, medicines, logs, notifications, profile, settings and prescriptions.
  */
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from "react";
-import type { Medicine, MedicationLog, NotificationItem, Profile, AppSettings, AuthUser, LogStatus } from "./types";
+import type { Medicine, MedicationLog, NotificationItem, Profile, AppSettings, AuthUser, LogStatus, Prescription } from "./types";
 import { SEED_MEDICINES, generateSeedLogs, SEED_NOTIFICATIONS, SEED_PROFILE } from "./seed-data";
 import { uid, todayISO, calculateAdherence, calculateStreak, getInventoryPercentage, isLowStock } from "./helpers";
 
@@ -19,6 +19,7 @@ interface PersistedState {
   notifications: NotificationItem[];
   profile: Profile;
   settings: AppSettings;
+  prescriptions: Prescription[];
 }
 
 const DEFAULT_STATE: PersistedState = {
@@ -34,6 +35,7 @@ const DEFAULT_STATE: PersistedState = {
     timeFormat: "12h",
     notificationsEnabled: true,
   },
+  prescriptions: [],
 };
 
 function loadState(): PersistedState {
@@ -41,12 +43,12 @@ function loadState(): PersistedState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw) as PersistedState;
-    // Merge with defaults to ensure new fields exist
     return {
       ...DEFAULT_STATE,
       ...parsed,
       settings: { ...DEFAULT_STATE.settings, ...parsed.settings },
       profile: { ...DEFAULT_STATE.profile, ...parsed.profile },
+      prescriptions: parsed.prescriptions ?? [],
     };
   } catch {
     return DEFAULT_STATE;
@@ -90,6 +92,11 @@ interface StoreValue extends PersistedState {
   updateSettings: (updates: Partial<AppSettings>) => void;
   toggleDarkMode: () => void;
 
+  /* Prescriptions */
+  addPrescription: (p: Omit<Prescription, "id" | "createdAt">) => void;
+  deletePrescription: (id: string) => void;
+  updatePrescription: (id: string, updates: Partial<Prescription>) => void;
+
   /* Derived data */
   todaySchedule: ReturnType<typeof getTodayScheduleProxy>;
   adherence: ReturnType<typeof calculateAdherence>;
@@ -97,22 +104,18 @@ interface StoreValue extends PersistedState {
   lowStockMeds: Medicine[];
 }
 
-// Helper type proxy to avoid circular import
 function getTodayScheduleProxy() { return []; }
 
 const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(() => {
-    // Avoid SSR issues — check window
     if (typeof window === "undefined") return DEFAULT_STATE;
     return loadState();
   });
 
-  // Persist on change
   useEffect(() => { saveState(state); }, [state]);
 
-  // Apply dark mode class
   useEffect(() => {
     const root = document.documentElement;
     if (state.settings.darkMode) root.classList.add("dark");
@@ -150,11 +153,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       id: uid("med"),
       createdAt: new Date().toISOString(),
     };
-    setState((s) => ({ ...s, medicines: [...s.medicines, newMed] }));
-
-    // Add notification
     setState((s) => ({
       ...s,
+      medicines: [...s.medicines, newMed],
       notifications: [
         {
           id: uid("notif"),
@@ -218,7 +219,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         ];
       }
 
-      // Reduce inventory when taken
       let medicines = s.medicines;
       if (status === "taken") {
         medicines = s.medicines.map((m) =>
@@ -227,12 +227,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             : m
         );
 
-        // Check for low stock notification
         const updatedMed = medicines.find((m) => m.id === medicineId);
         const wasLow = isLowStock(med);
         const isLowNow = updatedMed ? isLowStock(updatedMed) : false;
         if (!wasLow && isLowNow && updatedMed) {
-          newLogs = newLogs; // no-op to keep TS happy
           const lowNotif: NotificationItem = {
             id: uid("notif"),
             type: "low-stock",
@@ -246,7 +244,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Add notification for the action
       const actionNotif: NotificationItem = {
         id: uid("notif"),
         type: status === "taken" ? "reminder" : status === "missed" ? "missed" : "info",
@@ -338,6 +335,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, settings: { ...s.settings, darkMode: !s.settings.darkMode } }));
   }, []);
 
+  /* ── Prescriptions ── */
+  const addPrescription = useCallback((p: Omit<Prescription, "id" | "createdAt">) => {
+    const newPrescription: Prescription = {
+      ...p,
+      id: uid("rx"),
+      createdAt: new Date().toISOString(),
+    };
+    setState((s) => ({ ...s, prescriptions: [newPrescription, ...s.prescriptions] }));
+  }, []);
+
+  const deletePrescription = useCallback((id: string) => {
+    setState((s) => ({
+      ...s,
+      prescriptions: s.prescriptions.filter((p) => p.id !== id),
+    }));
+  }, []);
+
+  const updatePrescription = useCallback((id: string, updates: Partial<Prescription>) => {
+    setState((s) => ({
+      ...s,
+      prescriptions: s.prescriptions.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    }));
+  }, []);
+
   /* ── Derived data ── */
   const todaySchedule = useMemo(() => {
     const activeMeds = state.medicines.filter((m) => m.isActive);
@@ -367,6 +388,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     markLogStatus, snoozeLog, getLog,
     markNotificationRead, markAllNotificationsRead, addNotification,
     updateProfile, updateSettings, toggleDarkMode,
+    addPrescription, deletePrescription, updatePrescription,
     todaySchedule, adherence, streak, lowStockMeds,
   };
 
