@@ -32,7 +32,7 @@ export function AppShell({ children, showFrame = true }: AppShellProps) {
  */
 export function ScrollArea({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("app-scroll flex-1 overflow-y-auto no-scrollbar pb-28", className)}>
+    <div className={cn("app-scroll flex-1 overflow-y-auto no-scrollbar pb-36", className)}>
       {children}
     </div>
   );

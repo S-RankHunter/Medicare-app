@@ -27,7 +27,7 @@ export default function SettingsScreen() {
     <div>
       <AppHeader title="Settings" subtitle="Customize your experience" onBack={() => navigate("/profile")} />
 
-      <div className="px-5 mt-3 pb-28 space-y-5">
+      <div className="px-5 mt-3 pb-36 space-y-5">
         {/* Appearance */}
         <SettingsSection title="Appearance">
           <SettingsRow

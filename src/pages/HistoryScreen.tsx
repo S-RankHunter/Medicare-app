@@ -50,7 +50,7 @@ export default function HistoryScreen() {
     <div>
       <AppHeader title="History" subtitle="Complete medication log" onBack={() => window.history.back()} />
 
-      <div className="px-5 mt-3 pb-28">
+      <div className="px-5 mt-3 pb-36">
         {/* Filter chips */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4 -mx-5 px-5">
           {filters.map((f) => (

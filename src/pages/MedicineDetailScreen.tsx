@@ -49,7 +49,7 @@ export default function MedicineDetailScreen() {
     <div>
       <AppHeader title="Medicine Details" onBack={() => navigate("/medicines")} />
 
-      <div className="px-5 mt-3 pb-28">
+      <div className="px-5 mt-3 pb-36">
         {/* Hero card */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <GlassCard variant="glass-strong" className="p-5 relative overflow-hidden">

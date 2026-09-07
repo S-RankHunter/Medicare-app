@@ -42,7 +42,7 @@ export default function NotificationsScreen() {
         }
       />
 
-      <div className="px-5 mt-3 pb-28">
+      <div className="px-5 mt-3 pb-36">
         {notifications.length === 0 ? (
           <GlassCard className="p-12 text-center">
             <BellOff className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />

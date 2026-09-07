@@ -95,7 +95,7 @@ export default function PrescriptionScreen() {
         }
       />
 
-      <div className="px-4 mt-3 pb-28">
+      <div className="px-4 mt-3 pb-36">
         {prescriptions.length === 0 && (
           <div className="flex flex-col items-center justify-center bg-white rounded-2xl border border-border p-10 mt-4 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mb-4">

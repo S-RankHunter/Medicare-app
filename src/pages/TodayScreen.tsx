@@ -51,7 +51,7 @@ export default function TodayScreen() {
     <div>
       <AppHeader title="Today" subtitle={new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} />
 
-      <div className="px-5 mt-3 pb-28">
+      <div className="px-5 mt-3 pb-36">
         {/* Progress summary */}
         <GlassCard variant="glass-strong" className="p-5 flex items-center gap-5">
           <ProgressRing percentage={pct} size={90} strokeWidth={9} color="hsl(var(--accent))" sublabel="Done" />

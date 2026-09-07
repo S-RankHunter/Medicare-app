@@ -95,7 +95,7 @@ export default function CalendarScreen() {
         }
       />
 
-      <div className="px-5 mt-3 pb-28">
+      <div className="px-5 mt-3 pb-36">
         {/* Calendar */}
         <GlassCard variant="glass-strong" className="p-4">
           {/* Month nav */}

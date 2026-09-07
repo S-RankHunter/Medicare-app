@@ -71,7 +71,7 @@ export default function FamilyCenterScreen() {
         }
       />
 
-      <div className="px-4 mt-3 pb-28">
+      <div className="px-4 mt-3 pb-36">
 
         {/* Info Banner */}
         <motion.div

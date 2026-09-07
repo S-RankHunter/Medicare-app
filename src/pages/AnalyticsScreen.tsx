@@ -82,7 +82,7 @@ export default function AnalyticsScreen() {
     <div>
       <AppHeader title="Analytics" subtitle="Your medication insights" />
 
-      <div className="px-5 mt-3 pb-28 space-y-4">
+      <div className="px-5 mt-3 pb-36 space-y-4">
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3">
           {stats.map((stat, i) => {

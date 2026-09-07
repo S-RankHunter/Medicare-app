@@ -29,7 +29,7 @@ export default function InsightsScreen() {
     <div>
       <AppHeader title="AI Health Insights" subtitle="Educational medication guidance" onBack={() => window.history.back()} />
 
-      <div className="px-5 mt-3 pb-28">
+      <div className="px-5 mt-3 pb-36">
         {/* Hero banner */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <GlassCard variant="glass-strong" className="p-5 relative overflow-hidden bg-gradient-to-br from-violet-500/10 to-purple-500/5">
