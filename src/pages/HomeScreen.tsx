@@ -328,7 +328,7 @@ export default function HomeScreen() {
       </div>
 
       {/* Bottom spacing for FAB + Nav */}
-      <div className="h-4" />
+      <div className="h-48" />
     </div>
   );
 }
