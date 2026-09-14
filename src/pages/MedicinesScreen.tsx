@@ -31,7 +31,7 @@ export default function MedicinesScreen() {
     <div>
       <AppHeader title="Medicines" subtitle={`${medicines.length} total medicines`} />
 
-      <div className="px-5 mt-3">
+      <div className="px-5 mt-24">
         {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground" />
